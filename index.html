@@ -3,46 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Color Wheel Persona - Collaborative Director's Hub</title>
+    <title>Color Wheel Persona - Pro Director Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Chosen Palette: Warm neutral background (#f9f7f2) with vibrant theme accents. -->
-    <!-- Application Structure Plan: 
-        - MOBILE OPTIMIZED: Adjusted min-heights and grid layouts for smaller screens (iPhone/Android).
-        - SHARED WORKSPACE: Uses Firestore public paths for real-time collaboration.
-        - IMAGE COMPRESSION: Client-side canvas compression to bypass Firestore's 1MB limit.
-        - MULTI-IMAGE SUPPORT: Stores compressed Base64 images per scene.
-        - TOUCH TARGETS: Increased button padding and interactive areas for finger taps.
+    <!-- Design Token: Premium Neutral & Vibrant Accents -->
+    <!-- Feature Plan:
+        1. PERSISTENCE: Images & Plan data are saved to Firestore public paths.
+        2. MOBILE READY: Responsive flex/grid system for handheld devices.
+        3. IMAGE ENGINE: Auto-compression (Canvas) + Multi-upload + Full-screen Zoom.
+        4. SCHEDULING: Specific Date & Time per scene displayed in a timeline.
     -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f9f7f2; -webkit-tap-highlight-color: transparent; }
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;900&display=swap');
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8f7f4; -webkit-tap-highlight-color: transparent; }
         
-        .color-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .color-card:active { transform: scale(0.95); }
-        .active-ring { outline: 3px solid #1a1a1a; outline-offset: 2px; }
+        .color-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border-radius: 20px; }
+        .color-card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px -8px rgba(0,0,0,0.15); }
+        .active-ring { outline: 4px solid #000; outline-offset: 2px; z-index: 20; transform: scale(1.05); }
         
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
         .editable-input {
             width: 100%;
             background: transparent;
             border: 1px solid transparent;
-            border-radius: 8px;
-            padding: 8px;
+            border-radius: 12px;
+            padding: 10px;
             transition: all 0.2s;
-            font-size: 16px; /* Prevents iOS zoom on focus */
+            font-size: 16px; 
         }
-        .editable-input:hover { background: rgba(255, 255, 255, 0.5); border-color: #e2e8f0; }
+        .editable-input:hover { background: rgba(255, 255, 255, 0.6); border-color: #e2e8f0; }
         .editable-input:focus {
             background: white;
             border-color: #6366f1;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
 
         .loader {
@@ -52,7 +48,6 @@
             width: 14px;
             height: 14px;
             animation: spin 1s linear infinite;
-            display: inline-block;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -60,150 +55,149 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 16px;
         }
 
-        .img-grid-item {
+        .img-item {
             position: relative;
             aspect-ratio: 3/4;
-            overflow: hidden;
             border-radius: 16px;
-            background: #f1f5f9;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Responsive adjustments for narrow screens */
-        @media (max-width: 640px) {
-            .mobile-stack { flex-direction: column; }
-            .detail-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+            overflow: hidden;
+            background: #eee;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body class="text-slate-900 overflow-x-hidden">
 
-    <header class="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-50">
+    <!-- Sticky Header -->
+    <header class="border-b border-slate-200 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <span class="text-xl sm:text-2xl">🎬</span>
-                <h1 class="font-black text-sm sm:text-lg tracking-tight uppercase text-slate-900">COLOR WHEEL <span class="text-indigo-600 italic">MOBILE</span></h1>
+                <span class="text-2xl">📸</span>
+                <h1 class="font-black text-sm sm:text-xl tracking-tighter uppercase">Color Wheel <span class="text-indigo-600">Pro</span></h1>
             </div>
-            <div id="save-status" class="flex items-center gap-2 bg-slate-100 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full">
-                <span id="save-dot" class="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full"></span>
-                <span id="save-text" class="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">실시간 저장됨</span>
+            <div id="save-status" class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                <span id="save-dot" class="w-2 h-2 bg-green-500 rounded-full"></span>
+                <span id="save-text" class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">실시간 동기화</span>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6 sm:space-y-10">
-        <!-- Top Section -->
-        <section class="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div class="max-w-2xl text-center md:text-left">
-                <h2 class="text-2xl sm:text-3xl font-black mb-2 tracking-tighter italic text-slate-900 uppercase">Production Master</h2>
-                <p class="text-slate-500 leading-relaxed text-xs sm:text-sm font-medium">
-                    모바일 최적화 완료. 현장에서 사진을 찍고 바로 업로드하세요. <br class="hidden sm:block">
-                    모든 기획 내용은 팀원들과 **실시간으로 공유**됩니다.
+    <main class="max-w-7xl mx-auto px-4 py-6 sm:py-10 space-y-8">
+        
+        <!-- Welcome banner -->
+        <section class="bg-white rounded-[2rem] p-6 sm:p-10 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div class="max-w-2xl text-center md:text-left space-y-3">
+                <h2 class="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900 uppercase italic">Director's Workspace</h2>
+                <p class="text-slate-500 leading-relaxed text-sm sm:text-base font-medium">
+                    팀원들과 기획안을 실시간으로 완성하세요. <br class="hidden sm:block">
+                    업로드한 모든 사진은 **자동 압축 저장**되어 코드가 바뀌어도 유지됩니다.
                 </p>
             </div>
-            <div class="bg-indigo-50 border border-indigo-100 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center min-w-[150px] w-full md:w-auto">
-                <p class="text-[9px] font-bold text-indigo-400 uppercase mb-1 tracking-widest italic">Collaborator ID</p>
-                <p class="text-xl sm:text-2xl font-black text-indigo-900" id="user-id-display">Connecting...</p>
+            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center min-w-[160px] w-full md:w-auto">
+                <p class="text-[10px] font-bold text-indigo-400 uppercase mb-1 tracking-widest">Collaborator ID</p>
+                <p class="text-2xl font-black text-indigo-900" id="user-id-display">...</p>
             </div>
         </section>
 
-        <!-- Main Workspace -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
-            <!-- Left Palette -->
-            <div class="lg:col-span-4 space-y-4">
-                <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-2 italic text-center">Select Theme</h3>
-                <div class="grid grid-cols-3 gap-2 sm:gap-3" id="color-grid"></div>
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left: Palette Selection -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="flex items-center justify-between px-2">
+                    <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] italic">Concept Selector</h3>
+                </div>
+                <div class="grid grid-cols-3 gap-3" id="color-grid"></div>
                 
-                <div class="bg-slate-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xl">
-                    <h4 class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-4 italic text-center border-b border-white/10 pb-2">Timeline Summary</h4>
-                    <div class="space-y-2.5" id="schedule-preview"></div>
+                <!-- Summary Card -->
+                <div class="bg-slate-900 text-white rounded-[2rem] p-6 shadow-2xl space-y-4">
+                    <h4 class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest border-b border-white/10 pb-2 italic">Timeline Preview</h4>
+                    <div class="space-y-3" id="schedule-preview"></div>
                 </div>
             </div>
 
-            <!-- Right Detail View -->
-            <div class="lg:col-span-8 bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm min-h-[500px] flex flex-col overflow-hidden" id="detail-view">
-                <div id="detail-empty" class="m-auto text-center space-y-4 py-20 px-6">
-                    <div class="text-5xl opacity-20">🎨</div>
-                    <p class="text-slate-400 font-bold tracking-tight uppercase text-xs sm:text-sm">컬러를 선택하여 상세 기획을 시작하세요</p>
+            <!-- Right: Scene Details -->
+            <div class="lg:col-span-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm min-h-[600px] flex flex-col overflow-hidden" id="detail-view">
+                
+                <div id="detail-empty" class="m-auto text-center space-y-4 py-20">
+                    <div class="text-6xl opacity-10">🎨</div>
+                    <p class="text-slate-300 font-bold uppercase text-xs tracking-widest">왼쪽 팔레트에서 컬러를 선택하세요</p>
                 </div>
                 
-                <div id="detail-content" class="hidden flex flex-col h-full">
+                <div id="detail-content" class="hidden flex flex-col h-full animate-in fade-in duration-500">
                     <!-- Detail Header -->
-                    <div class="p-6 sm:p-8 border-b border-slate-50 detail-header flex justify-between items-start">
-                        <div class="space-y-1">
-                            <span id="view-tag" class="px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest uppercase text-white shadow-sm"></span>
-                            <h4 id="view-title" class="text-3xl sm:text-5xl font-black tracking-tighter italic text-slate-900 uppercase"></h4>
+                    <div class="p-6 sm:p-10 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
+                        <div class="space-y-2">
+                            <span id="view-tag" class="px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-white shadow-sm inline-block"></span>
+                            <h4 id="view-title" class="text-4xl sm:text-6xl font-black tracking-tighter italic text-slate-900 uppercase"></h4>
                         </div>
-                        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                            <div class="bg-slate-50 p-2 sm:p-3 rounded-xl border border-slate-100 flex-1">
-                                <p class="text-[8px] text-slate-400 uppercase font-black tracking-widest mb-1 italic">Schedule</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full sm:w-auto">
+                            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                <p class="text-[9px] text-slate-400 uppercase font-black mb-1">Shoot Schedule</p>
                                 <div class="flex gap-2">
-                                    <input type="date" id="view-date" onchange="handleTextChange('specificDate', this.value)" class="bg-transparent text-[11px] font-bold focus:outline-none text-slate-700 w-full">
-                                    <input type="time" id="view-time" onchange="handleTextChange('specificTime', this.value)" class="bg-transparent text-[11px] font-bold focus:outline-none text-slate-700 border-l border-slate-200 pl-2">
+                                    <input type="date" id="view-date" onchange="handleTextChange('specificDate', this.value)" class="bg-transparent text-xs font-bold focus:outline-none text-slate-800">
+                                    <input type="time" id="view-time" onchange="handleTextChange('specificTime', this.value)" class="bg-transparent text-xs font-bold focus:outline-none text-slate-800 border-l border-slate-200 pl-2">
                                 </div>
                             </div>
-                            <div class="bg-slate-50 p-2 sm:p-3 rounded-xl border border-slate-100 flex-1 min-w-[120px]">
-                                <p class="text-[8px] text-slate-400 uppercase font-black tracking-widest mb-1 italic">Location</p>
-                                <input type="text" id="view-loc-input" onblur="handleTextChange('loc', this.value)" class="bg-transparent text-[11px] font-bold focus:outline-none text-slate-700 w-full" placeholder="장소 입력">
+                            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                <p class="text-[9px] text-slate-400 uppercase font-black mb-1">Location</p>
+                                <input type="text" id="view-loc-input" onblur="handleTextChange('loc', this.value)" class="bg-transparent text-xs font-bold focus:outline-none text-slate-800 w-full" placeholder="촬영 장소 입력">
                             </div>
                         </div>
                     </div>
 
                     <!-- Detail Body -->
-                    <div class="p-6 sm:p-8 grid md:grid-cols-2 gap-6 sm:gap-8 flex-1">
-                        <div class="space-y-6">
-                            <div class="bg-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-100 relative group">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic font-bold">👗 의상 스타일</h5>
-                                    <button onclick="aiSuggest('outfit')" class="text-[10px] font-bold text-indigo-600 flex items-center gap-1 hover:underline" id="btn-ai-outfit">
-                                        <span id="loader-outfit" class="loader hidden"></span> ✨ AI
-                                    </button>
+                    <div class="p-6 sm:p-10 grid md:grid-cols-2 gap-10">
+                        <!-- Left info columns -->
+                        <div class="space-y-8">
+                            <div class="space-y-4">
+                                <div class="bg-slate-50 rounded-2xl p-6 border border-slate-100 relative">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">👗 Outfit Style</h5>
+                                        <button onclick="aiSuggest('outfit')" class="text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded transition" id="btn-ai-outfit">✨ AI 추천</button>
+                                    </div>
+                                    <input type="text" id="view-outfit" onblur="handleTextChange('outfit', this.value)" class="editable-input text-lg font-bold text-slate-900" placeholder="의상 컨셉을 입력하세요">
                                 </div>
-                                <input type="text" id="view-outfit" onblur="handleTextChange('outfit', this.value)" class="editable-input text-base sm:text-lg font-bold text-slate-800" placeholder="의상 정보">
+
+                                <div class="bg-slate-50 rounded-2xl p-6 border border-slate-100 relative">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">🎬 Action Guide</h5>
+                                        <button onclick="aiSuggest('action')" class="text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded transition" id="btn-ai-action">✨ AI 추천</button>
+                                    </div>
+                                    <textarea id="view-action" onblur="handleTextChange('action', this.value)" rows="3" class="editable-input leading-relaxed text-slate-600 font-medium resize-none text-sm" placeholder="연출 및 포즈 아이디어"></textarea>
+                                </div>
                             </div>
 
-                            <div class="bg-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-100 relative group">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic font-bold">🎬 연출 가이드</h5>
-                                    <button onclick="aiSuggest('action')" class="text-[10px] font-bold text-indigo-600 flex items-center gap-1 hover:underline" id="btn-ai-action">
-                                        <span id="loader-action" class="loader hidden"></span> ✨ AI
-                                    </button>
-                                </div>
-                                <textarea id="view-action" onblur="handleTextChange('action', this.value)" rows="3" class="editable-input leading-relaxed text-slate-600 font-medium resize-none text-xs sm:text-sm" placeholder="연출 아이디어"></textarea>
-                            </div>
-
-                            <div class="bg-indigo-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-                                <h5 class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest italic border-b border-indigo-800 pb-2 font-black">📦 준비물 (Supplies)</h5>
-                                <div id="supplies-list" class="space-y-2 max-h-[120px] overflow-y-auto no-scrollbar"></div>
+                            <!-- Supplies -->
+                            <div class="bg-indigo-900 text-white rounded-[2rem] p-8 shadow-xl space-y-4">
+                                <h5 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest italic border-b border-indigo-800 pb-2">📦 Supplies Checklist</h5>
+                                <div id="supplies-list" class="space-y-2.5 max-h-[200px] overflow-y-auto no-scrollbar"></div>
                                 <div class="flex gap-2">
-                                    <input type="text" id="new-supply-input" class="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-400 text-white placeholder-white/30" placeholder="추가...">
-                                    <button onclick="addSupply()" class="bg-indigo-500 px-3 rounded-xl text-[10px] font-bold hover:bg-indigo-400 transition text-white uppercase">Add</button>
+                                    <input type="text" id="new-supply-input" class="flex-1 bg-white/10 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-indigo-400 text-white" placeholder="준비물 추가...">
+                                    <button onclick="addSupply()" class="bg-indigo-500 px-4 rounded-xl text-xs font-bold hover:bg-indigo-400 transition">추가</button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Gallery -->
-                        <div class="space-y-4 h-full flex flex-col">
-                            <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl">
-                                <h5 class="text-[10px] font-black text-slate-900 uppercase tracking-widest italic">🖼️ 갤러리</h5>
-                                <button onclick="triggerUpload()" class="text-[10px] bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 uppercase shadow-md">
-                                    <span>📸</span> 추가
-                                </button>
+                        <!-- Right Gallery column -->
+                        <div class="space-y-6">
+                            <div class="flex justify-between items-center bg-white border-b border-slate-100 pb-4">
+                                <h5 class="text-[10px] font-black text-slate-900 uppercase tracking-widest italic">🖼️ Reference Gallery</h5>
+                                <button onclick="triggerUpload()" class="bg-black text-white px-4 py-2 rounded-xl text-[10px] font-bold hover:bg-slate-800 transition uppercase shadow-lg">📸 사진 추가</button>
                                 <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFileUpload(event)">
                             </div>
                             
-                            <div id="image-gallery" class="grid grid-cols-2 gap-3 flex-1"></div>
+                            <div id="image-gallery" class="grid grid-cols-2 gap-4"></div>
 
-                            <div id="no-img-placeholder" class="hidden aspect-[3/4] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 gap-3">
-                                <span class="text-4xl opacity-50">📷</span>
-                                <p class="text-[10px] font-bold uppercase tracking-widest">No Photos</p>
+                            <div id="no-img-placeholder" class="hidden aspect-[3/4] bg-slate-100 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 gap-4">
+                                <span class="text-5xl opacity-40">📷</span>
+                                <p class="text-[10px] font-black uppercase tracking-widest">No images yet</p>
                             </div>
                         </div>
                     </div>
@@ -211,19 +205,19 @@
             </div>
         </div>
 
-        <!-- Schedule Section -->
-        <section id="schedule" class="bg-white rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-10 border border-slate-100 shadow-sm">
-            <h3 class="text-xl sm:text-2xl font-black mb-8 tracking-tighter italic text-slate-900 uppercase">📅 촬영 캘린더 (Schedule)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10">
+        <!-- Calendar Section -->
+        <section id="schedule" class="bg-white rounded-[3rem] p-6 sm:p-12 border border-slate-100 shadow-sm space-y-10">
+            <h3 class="text-2xl sm:text-3xl font-black tracking-tighter italic text-slate-900 uppercase">📅 Master Schedule</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div class="space-y-6">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <h4 class="font-black text-indigo-600 text-sm sm:text-lg italic uppercase tracking-tighter">Primary Shoot (D1)</h4>
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <h4 class="font-black text-indigo-600 text-lg italic uppercase">Primary Shoot (D1)</h4>
                     </div>
                     <div class="grid grid-cols-1 gap-3" id="day1-slots"></div>
                 </div>
                 <div class="space-y-6">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <h4 class="font-black text-purple-600 text-sm sm:text-lg italic uppercase tracking-tighter">Secondary Shoot (D2)</h4>
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <h4 class="font-black text-purple-600 text-lg italic uppercase">Secondary Shoot (D2)</h4>
                     </div>
                     <div class="grid grid-cols-1 gap-3" id="day2-slots"></div>
                 </div>
@@ -231,14 +225,15 @@
         </section>
     </main>
 
+    <!-- Zoom Modal -->
     <div id="image-modal" onclick="closeModal()">
-        <img id="modal-img" src="" class="max-w-full max-h-full rounded-lg shadow-2xl object-contain border-2 border-white/20">
+        <img id="modal-img" src="" class="max-w-full max-h-full rounded-2xl shadow-2xl object-contain border-4 border-white/10 scale-in-center">
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
@@ -249,39 +244,35 @@
 
         let user = null;
         let currentId = null;
-        let data = [
+        let scenesData = [
             { id: 'intro', name: 'Intro', hex: '#ffffff', tag: 'Start', loc: '집, 스튜디오', outfit: '잠옷 (파자마)', action: '색을 깨우는 동작', supplies: [], day: 2, specificDate: '', specificTime: '', images: [] },
             { id: 'green', name: 'Green', hex: '#22c55e', tag: 'Fresh', loc: '올림픽공원', outfit: '린넨 원피스', action: '청순한 미소', supplies: [], day: 1, specificDate: '', specificTime: '', images: [] },
             { id: 'yellow', name: 'Yellow', hex: '#eab308', tag: 'Energy', loc: '산수유 군락지', outfit: '노란 가디건', action: '점프 동작', supplies: [], day: 1, specificDate: '', specificTime: '', images: [] },
             { id: 'white', name: 'White', hex: '#f8fafc', tag: 'Pure', loc: '자연광 스튜디오', outfit: '흰색 드레스', action: '정적인 눈빛', supplies: [], day: 2, specificDate: '', specificTime: '', images: [] },
             { id: 'brown', name: 'Brown', hex: '#78350f', tag: 'Classic', loc: '빈티지 카페', outfit: '고딕 드레스', action: '미스터리 포즈', supplies: [], day: 2, specificDate: '', specificTime: '', images: [] },
             { id: 'red', name: 'Red', hex: '#ef4444', tag: 'Bold', loc: '레드 스튜디오', outfit: '레드 오프숄더', action: '당당한 워킹', supplies: [], day: 2, specificDate: '', specificTime: '', images: [] },
-            { id: 'pink', name: 'Pink', hex: '#ec4899', tag: 'Romantic', loc: '벚꽃 길', outfit: '쉬폰 블라우스', action: '몽환적인 연출', supplies: [], day: 1, specificDate: '', specificTime: '', images: [] },
-            { id: 'purple', name: 'Purple', hex: '#a855f7', tag: 'Mystic', loc: '야간 조명', outfit: '벨벳 원피스', action: '실루엣 연출', supplies: [], day: 2, specificDate: '', specificTime: '', images: [] },
+            { id: 'pink', name: 'Pink', hex: '#ec4899', tag: 'Lovely', loc: '벚꽃 길', outfit: '연핑크 쉬폰 블라우스', action: '몽환적인 연출', supplies: [], day: 1, specificDate: '', specificTime: '', images: [] },
+            { id: 'purple', name: 'Purple', hex: '#a855f7', tag: 'Mystic', loc: '야간 조명', outfit: '보라 벨벳 원피스', action: '실루엣 연출', supplies: [], day: 2, specificDate: '', specificTime: '', images: [] },
             { id: 'blue', name: 'Blue', hex: '#3b82f6', tag: 'Vibe', loc: '한강변', outfit: '데님 셋업', action: '하이틴 감성', supplies: [], day: 1, specificDate: '', specificTime: '', images: [] }
         ];
 
         window.openModal = (src) => {
-            if (!src) return;
             const modal = document.getElementById('image-modal');
-            const modalImg = document.getElementById('modal-img');
-            modalImg.src = src;
+            const img = document.getElementById('modal-img');
+            img.src = src;
             modal.style.display = 'flex';
         };
-        window.closeModal = () => {
-            document.getElementById('image-modal').style.display = 'none';
-        };
+        window.closeModal = () => document.getElementById('image-modal').style.display = 'none';
 
         const setSaveStatus = (status) => {
             const dot = document.getElementById('save-dot');
             const text = document.getElementById('save-text');
-            if (!dot || !text) return;
             if (status === 'saving') {
                 dot.className = "w-2 h-2 bg-amber-500 rounded-full animate-pulse";
-                text.innerText = "Saving...";
+                text.innerText = "저장 중...";
             } else {
                 dot.className = "w-2 h-2 bg-green-500 rounded-full";
-                text.innerText = "Synced";
+                text.innerText = "동기화됨";
             }
         };
 
@@ -296,8 +287,7 @@
         onAuthStateChanged(auth, (u) => {
             user = u;
             if (user) {
-                const userDisplay = document.getElementById('user-id-display');
-                if (userDisplay) userDisplay.innerText = user.uid.slice(-6).toUpperCase();
+                document.getElementById('user-id-display').innerText = user.uid.slice(-6).toUpperCase();
                 syncData();
             }
         });
@@ -308,9 +298,9 @@
             onSnapshot(colRef, (qs) => {
                 qs.forEach((doc) => {
                     const sceneData = doc.data();
-                    const idx = data.findIndex(s => s.id === sceneData.id);
+                    const idx = scenesData.findIndex(s => s.id === sceneData.id);
                     if (idx !== -1) {
-                        data[idx] = { ...data[idx], ...sceneData };
+                        scenesData[idx] = { ...scenesData[idx], ...sceneData };
                     }
                 });
                 renderUI();
@@ -320,132 +310,80 @@
         const saveScene = async (sceneId) => {
             if (!user) return;
             setSaveStatus('saving');
-            try {
-                const scene = data.find(d => d.id === sceneId);
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'scenes', sceneId);
-                await setDoc(docRef, scene, { merge: true });
-                setSaveStatus('saved');
-            } catch (e) {
-                setSaveStatus('error');
-            }
+            const scene = scenesData.find(d => d.id === sceneId);
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'scenes', sceneId);
+            await setDoc(docRef, scene, { merge: true });
+            setSaveStatus('saved');
         };
 
         window.handleTextChange = (field, value) => {
             if (!currentId) return;
-            const scene = data.find(d => d.id === currentId);
+            const scene = scenesData.find(d => d.id === currentId);
             if (scene && scene[field] !== value) {
                 scene[field] = value;
                 saveScene(currentId);
-                if (field === 'specificDate' || field === 'specificTime' || field === 'loc') renderSchedule();
+                if (['specificDate', 'specificTime', 'loc'].includes(field)) renderSchedule();
             }
         };
 
         window.addSupply = () => {
             const input = document.getElementById('new-supply-input');
-            const text = input ? input.value.trim() : "";
+            const text = input.value.trim();
             if (text && currentId) {
-                const scene = data.find(d => d.id === currentId);
+                const scene = scenesData.find(d => d.id === currentId);
                 if (!scene.supplies) scene.supplies = [];
                 scene.supplies.push({ text, checked: false });
-                if (input) input.value = "";
+                input.value = "";
                 saveScene(currentId);
                 renderSupplies();
             }
         };
 
         window.toggleSupply = (idx) => {
-            const scene = data.find(d => d.id === currentId);
-            if (scene && scene.supplies[idx]) {
-                scene.supplies[idx].checked = !scene.supplies[idx].checked;
-                saveScene(currentId);
-                renderSupplies();
-            }
+            const scene = scenesData.find(d => d.id === currentId);
+            scene.supplies[idx].checked = !scene.supplies[idx].checked;
+            saveScene(currentId);
+            renderSupplies();
         };
 
         window.removeSupply = (idx) => {
-            const scene = data.find(d => d.id === currentId);
-            if (scene && scene.supplies) {
-                scene.supplies.splice(idx, 1);
-                saveScene(currentId);
-                renderSupplies();
-            }
+            const scene = scenesData.find(d => d.id === currentId);
+            scene.supplies.splice(idx, 1);
+            saveScene(currentId);
+            renderSupplies();
         };
 
         window.moveDay = (id, targetDay) => {
-            const scene = data.find(d => d.id === id);
-            if (scene) {
-                scene.day = targetDay;
-                saveScene(id);
-                renderSchedule();
-            }
+            const scene = scenesData.find(d => d.id === id);
+            scene.day = targetDay;
+            saveScene(id);
+            renderSchedule();
         };
 
         window.deleteImage = (idx) => {
-            if (!currentId) return;
-            const scene = data.find(d => d.id === currentId);
-            if (scene && scene.images) {
-                scene.images.splice(idx, 1);
-                saveScene(currentId);
-                updateView(scene);
-            }
+            const scene = scenesData.find(d => d.id === currentId);
+            scene.images.splice(idx, 1);
+            saveScene(currentId);
+            updateView(scene);
         };
 
-        window.aiSuggest = async (type) => {
-            if (!currentId) return;
-            const scene = data.find(d => d.id === currentId);
-            const loader = document.getElementById(`loader-${type}`);
-            const btn = document.getElementById(`btn-ai-${type}`);
-            if (loader) loader.classList.remove('hidden');
-            if (btn) btn.disabled = true;
+        window.triggerUpload = () => document.getElementById('file-input').click();
 
-            const systemPrompt = "숏폼 영상 전문가입니다. 컬러 테마에 맞춰 간결한 제안을 한글로 하세요.";
-            const prompt = type === 'outfit' 
-                ? `${scene.name} 테마와 ${scene.tag} 무드에 어울리는 틱톡용 코디 추천`
-                : `${scene.name} 테마, ${scene.outfit} 의상에 어울리는 연출 3가지`;
-
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemPrompt }] } })
-                });
-                const result = await response.json();
-                const suggestion = result.candidates?.[0]?.content?.parts?.[0]?.text || "추천 실패";
-                
-                const inputEl = document.getElementById(`view-${type}`);
-                if (inputEl) inputEl.value = suggestion;
-                
-                handleTextChange(type, suggestion);
-            } catch (e) { console.error(e); } finally {
-                if (loader) loader.classList.add('hidden');
-                if (btn) btn.disabled = false;
-            }
-        };
-
-        window.triggerUpload = () => {
-            document.getElementById('file-input').click();
-        };
-
-        async function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+        async function compressImg(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = (event) => {
+                reader.onload = (e) => {
                     const img = new Image();
-                    img.src = event.target.result;
+                    img.src = e.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > height) {
-                            if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
-                        } else {
-                            if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
-                        }
-                        canvas.width = width; canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', quality));
+                        let w = img.width, h = img.height, max = 800;
+                        if (w > h && w > max) { h *= max/w; w = max; }
+                        else if (h > max) { w *= max/h; h = max; }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
                     };
                 };
             });
@@ -454,158 +392,139 @@
         window.handleFileUpload = async (event) => {
             const file = event.target.files[0];
             if (!file || !currentId) return;
-
             setSaveStatus('saving');
-            try {
-                const compressedBase64 = await compressImage(file);
-                const scene = data.find(d => d.id === currentId);
-                if (scene) {
-                    if (!scene.images) scene.images = [];
-                    if (scene.images.length >= 8) {
-                        alert("이미지는 최대 8장까지 가능합니다.");
-                    } else {
-                        scene.images.push(compressedBase64);
-                        updateView(scene);
-                        await saveScene(currentId);
-                    }
-                }
-            } catch (error) {
-                alert("업로드 실패");
-            } finally {
+            const scene = scenesData.find(d => d.id === currentId);
+            if (scene.images && scene.images.length >= 8) {
+                alert("최대 8장까지 가능합니다.");
                 event.target.value = "";
                 setSaveStatus('saved');
+                return;
             }
+            const b64 = await compressImg(file);
+            if (!scene.images) scene.images = [];
+            scene.images.push(b64);
+            await saveScene(currentId);
+            updateView(scene);
+            event.target.value = "";
+            setSaveStatus('saved');
+        };
+
+        window.aiSuggest = async (type) => {
+            if (!currentId) return;
+            const scene = scenesData.find(d => d.id === currentId);
+            const systemPrompt = "숏폼 영상 전문가입니다. 컬러 테마에 맞춰 간결한 제안을 한글로 하세요.";
+            const prompt = type === 'outfit' 
+                ? `${scene.name} 테마, ${scene.tag} 무드 코디 1세트 추천`
+                : `${scene.name} 테마, ${scene.outfit} 연출 포인트 3가지`;
+            
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemPrompt }] } })
+                });
+                const res = await response.json();
+                const sug = res.candidates?.[0]?.content?.parts?.[0]?.text || "추천 실패";
+                document.getElementById(`view-${type}`).value = sug;
+                handleTextChange(type, sug);
+            } catch (e) { alert("AI 호출 실패"); }
         };
 
         function renderUI() {
             const grid = document.getElementById('color-grid');
-            if (!grid) return;
             grid.innerHTML = "";
-            data.forEach(item => {
+            scenesData.forEach(item => {
                 const btn = document.createElement('div');
-                btn.className = `color-card aspect-square rounded-2xl flex flex-col items-center justify-center text-[9px] font-black border border-slate-200 tracking-tighter uppercase relative ${currentId === item.id ? 'active-ring scale-110 z-10' : ''}`;
+                btn.className = `color-card aspect-square flex flex-col items-center justify-center text-[10px] font-black border border-slate-200 uppercase relative ${currentId === item.id ? 'active-ring' : ''}`;
                 btn.style.backgroundColor = item.hex;
-                btn.style.color = (item.id === 'white' || item.id === 'intro' || item.id === 'yellow') ? '#1e293b' : '#ffffff';
-                const timeStr = item.specificTime ? `<span class="mt-1 opacity-60 text-[7px]">${item.specificTime}</span>` : "";
-                btn.innerHTML = `<span>${item.name}</span>${timeStr}<span class="absolute top-1 right-1 opacity-40 text-[7px] font-bold">D${item.day}</span>`;
+                btn.style.color = (['#ffffff', '#f8fafc', '#f1f5f9', '#fbbf24', '#eab308'].includes(item.hex.toLowerCase())) ? '#1e293b' : '#fff';
+                const time = item.specificTime ? `<span class="mt-1 opacity-60 text-[8px]">${item.specificTime}</span>` : "";
+                btn.innerHTML = `<span>${item.name}</span>${time}<span class="absolute top-1 right-2 opacity-30 text-[7px]">D${item.day}</span>`;
                 btn.onclick = () => { currentId = item.id; renderUI(); };
                 grid.appendChild(btn);
             });
-
             renderSchedule();
-            if (currentId) updateView(data.find(d => d.id === currentId));
+            if (currentId) updateView(scenesData.find(d => d.id === currentId));
         }
 
         function renderSupplies() {
             const list = document.getElementById('supplies-list');
-            if (!list) return;
             list.innerHTML = "";
-            const scene = data.find(d => d.id === currentId);
-            if (!scene || !scene.supplies) return;
-
-            scene.supplies.forEach((item, idx) => {
+            const scene = scenesData.find(d => d.id === currentId);
+            if (!scene?.supplies) return;
+            scene.supplies.forEach((it, idx) => {
                 const div = document.createElement('div');
-                div.className = "flex items-center justify-between bg-white/5 p-2 rounded-lg border border-white/10 group";
+                div.className = "flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 group";
                 div.innerHTML = `
-                    <div class="flex items-center gap-2 cursor-pointer flex-1" onclick="toggleSupply(${idx})">
-                        <div class="w-3.5 h-3.5 rounded border border-white/30 flex items-center justify-center text-[8px] ${item.checked ? 'bg-indigo-400 border-indigo-400' : ''}">
-                            ${item.checked ? '✓' : ''}
+                    <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="toggleSupply(${idx})">
+                        <div class="w-4 h-4 rounded border border-white/30 flex items-center justify-center text-[8px] ${it.checked ? 'bg-indigo-400 border-indigo-400' : ''}">
+                            ${it.checked ? '✓' : ''}
                         </div>
-                        <span class="text-[10px] sm:text-[11px] ${item.checked ? 'line-through opacity-50 text-white/50' : 'text-white'} font-medium truncate max-w-[150px]">${item.text}</span>
+                        <span class="text-[11px] ${it.checked ? 'line-through opacity-50 text-white/50' : 'text-white'} font-medium">${it.text}</span>
                     </div>
-                    <button onclick="removeSupply(${idx})" class="text-[8px] text-red-400 font-bold uppercase">Del</button>
+                    <button onclick="removeSupply(${idx})" class="text-[10px] opacity-0 group-hover:opacity-100 text-red-400 font-bold uppercase">Del</button>
                 `;
                 list.appendChild(div);
             });
         }
 
         function renderSchedule() {
-            const d1 = document.getElementById('day1-slots');
-            const d2 = document.getElementById('day2-slots');
-            const preview = document.getElementById('schedule-preview');
-            if (!d1 || !d2 || !preview) return;
-            d1.innerHTML = ""; d2.innerHTML = ""; preview.innerHTML = "";
-
-            data.forEach(s => {
+            const d1 = document.getElementById('day1-slots'), d2 = document.getElementById('day2-slots'), pre = document.getElementById('schedule-preview');
+            d1.innerHTML = ""; d2.innerHTML = ""; pre.innerHTML = "";
+            scenesData.forEach(s => {
                 const card = document.createElement('div');
-                card.className = "flex items-center justify-between p-3 sm:p-4 bg-white border border-slate-100 rounded-xl sm:rounded-2xl hover:border-indigo-100 transition shadow-sm group cursor-pointer";
+                card.className = "flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-indigo-200 transition shadow-sm group cursor-pointer";
                 card.onclick = () => { currentId = s.id; renderUI(); };
-                
-                const dateLabel = s.specificDate ? `<span class="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded text-[7px] sm:text-[8px] font-black">${s.specificDate.slice(-5)}</span>` : "";
-                const timeLabel = s.specificTime ? `<span class="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded text-[7px] sm:text-[8px] font-black">${s.specificTime}</span>` : "";
-                
+                const dt = s.specificDate ? `<span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[8px] font-black">${s.specificDate.slice(-5)}</span>` : "";
+                const tm = s.specificTime ? `<span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded text-[8px] font-black">${s.specificTime}</span>` : "";
                 card.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-slate-50" style="background-color: ${s.hex}"></div>
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full border-2 border-slate-50" style="background-color: ${s.hex}"></div>
                         <div>
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <p class="text-[10px] sm:text-xs font-black uppercase tracking-tight text-slate-900">${s.name}</p>
-                                ${dateLabel}
-                                ${timeLabel}
-                            </div>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1 truncate max-w-[120px] sm:max-w-[150px]">${s.loc || 'N/A'}</p>
+                            <div class="flex items-center gap-2">${dt}${tm}<p class="text-xs font-black text-slate-900 uppercase">${s.name}</p></div>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1 truncate max-w-[120px]">${s.loc || 'Unset'}</p>
                         </div>
                     </div>
                     <div class="flex gap-1">
-                        <button onclick="event.stopPropagation(); moveDay('${s.id}', 1)" class="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[8px] font-black">D1</button>
-                        <button onclick="event.stopPropagation(); moveDay('${s.id}', 2)" class="px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded text-[8px] font-black">D2</button>
+                        <button onclick="event.stopPropagation(); moveDay('${s.id}', 1)" class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-[9px] font-black">D1</button>
+                        <button onclick="event.stopPropagation(); moveDay('${s.id}', 2)" class="px-2 py-1 bg-purple-50 text-purple-600 rounded text-[9px] font-black">D2</button>
                     </div>
                 `;
                 if (s.day === 1) d1.appendChild(card); else d2.appendChild(card);
-
-                const pItem = document.createElement('div');
-                pItem.className = "flex items-center gap-2";
-                const timePart = s.specificTime ? `[${s.specificTime}] ` : "";
-                pItem.innerHTML = `<span class="w-1 h-1 rounded-full" style="background-color: ${s.hex}"></span> <span class="opacity-70 font-bold">D${s.day}</span> <span class="font-black tracking-tighter uppercase text-[9px] text-slate-300 truncate max-w-[180px]">${timePart}${s.name}</span>`;
-                preview.appendChild(pItem);
+                const p = document.createElement('div');
+                p.className = "flex items-center gap-2";
+                p.innerHTML = `<span class="w-1.5 h-1.5 rounded-full" style="background-color: ${s.hex}"></span> <span class="opacity-70 font-bold">D${s.day}</span> <span class="font-black text-[9px] text-slate-300 uppercase truncate">${s.specificTime ? '['+s.specificTime+'] ' : ''}${s.name}</span>`;
+                pre.appendChild(p);
             });
         }
 
         function updateView(item) {
-            const empty = document.getElementById('detail-empty');
-            const content = document.getElementById('detail-content');
-            if (empty) empty.classList.add('hidden');
-            if (content) content.classList.remove('hidden');
-
+            document.getElementById('detail-empty').classList.add('hidden');
+            document.getElementById('detail-content').classList.remove('hidden');
             const tag = document.getElementById('view-tag');
-            if (tag) {
-                tag.innerText = item.tag;
-                tag.style.backgroundColor = item.hex;
-                tag.style.color = (item.id === 'white' || item.id === 'intro' || item.id === 'yellow') ? '#1e293b' : '#ffffff';
-            }
-            
+            tag.innerText = item.tag; tag.style.backgroundColor = item.hex;
+            tag.style.color = (['#ffffff', '#f8fafc', '#f1f5f9', '#fbbf24', '#eab308'].includes(item.hex.toLowerCase())) ? '#1e293b' : '#fff';
             document.getElementById('view-title').innerText = item.name;
             document.getElementById('view-loc-input').value = item.loc || "";
             document.getElementById('view-date').value = item.specificDate || "";
             document.getElementById('view-time').value = item.specificTime || "";
             document.getElementById('view-outfit').value = item.outfit || "";
             document.getElementById('view-action').value = item.action || "";
-
-            const gallery = document.getElementById('image-gallery');
-            const placeholder = document.getElementById('no-img-placeholder');
-            gallery.innerHTML = "";
-            
-            if (item.images && item.images.length > 0) {
-                placeholder.classList.add('hidden');
+            const gal = document.getElementById('image-gallery'), ph = document.getElementById('no-img-placeholder');
+            gal.innerHTML = "";
+            if (item.images?.length > 0) {
+                ph.classList.add('hidden');
                 item.images.forEach((src, idx) => {
-                    const div = document.createElement('div');
-                    div.className = "img-grid-item group";
-                    div.innerHTML = `
-                        <img src="${src}" class="w-full h-full object-cover" onclick="openModal('${src}')">
-                        <button onclick="deleteImage(${idx})" class="absolute top-1.5 right-1.5 bg-red-500/80 text-white w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold shadow-lg">✕</button>
-                    `;
-                    gallery.appendChild(div);
+                    const d = document.createElement('div');
+                    d.className = "img-item group";
+                    d.innerHTML = `<img src="${src}" class="w-full h-full object-cover cursor-zoom-in hover:scale-105 transition" onclick="openModal('${src}')"><button onclick="deleteImage(${idx})" class="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 shadow-xl transition">✕</button>`;
+                    gal.appendChild(d);
                 });
-            } else {
-                placeholder.classList.remove('hidden');
-            }
+            } else ph.classList.remove('hidden');
             renderSupplies();
         }
 
-        window.onload = () => {
-            renderUI();
-            initAuth();
-        };
+        window.onload = () => { renderUI(); initAuth(); };
     </script>
 </body>
 </html>
